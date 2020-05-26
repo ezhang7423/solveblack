@@ -26,7 +26,7 @@ public class Config {
     public int computesize = 2500000; 
     
     // Количество предложений при расчете
-    public int computeedges = 15; //12
+    public int computeedges = 26; //12
 
     // При расчете учитывать полный перебор
     public int computebrute = 0; //1
