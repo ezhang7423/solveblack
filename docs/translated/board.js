@@ -1,6 +1,6 @@
 /**
- * Управление партией на доске
- * @param {Element} el Элемент управления
+ * Party management on the board
+ * @param { Element } el Control
  */
 function Board(el) {
   this.el = el;
@@ -8,24 +8,24 @@ function Board(el) {
   this.start();
   var self = this;
   el.addEventListener("click", function (event) {
-    // Кликать во время расчета нельзя
+    // You cannot click during calculation
     if (self.calculating) {
       return;
     }
     var target = event.target;
-    // Ход на свободное поле
+    // Move to free field
     if (target.className === "freecell") {
       self.move(target.dataset.col + target.parentElement.dataset.row);
     }
-    // Нажатие кнопки
+    // Button press
     if (target.dataset.action) {
       self[target.dataset.action].call(self);
     }
-    // Включение/выключение автохода
+    // Turn on / off motor vehicle
     if (target.id === "automove") {
       self.start();
     }
-    // Включение/выключение подсказки
+    // Turn on / off prompts
     if (target.id === "showhelp") {
       self.help();
     }
@@ -33,15 +33,15 @@ function Board(el) {
   this.load();
 }
 
-// Начальная инициализация
+// Initialization
 Board.prototype.start = async function () {
-  this.record = [];
-  this.attacker = Layout.WHITE;
+  this.record = ["h8"];
+  this.attacker = Layout.BLACK;
   await this.find();
   this.fill();
 };
 
-// Нарисовать доску
+// Draw A Board
 Board.prototype.draw = function () {
   var desk = this.el.querySelector("table.desk");
   var s = "<tbody><tr><th></th>";
@@ -68,7 +68,7 @@ Board.prototype.draw = function () {
   desk.innerHTML = s;
 };
 
-// Установить камень
+// Set the stone
 Board.prototype.put = function (coord, label, color) {
   var cell = this.el.querySelector(
     'table.desk > tbody > tr[data-row="' +
@@ -85,7 +85,7 @@ Board.prototype.put = function (coord, label, color) {
   }
 };
 
-// Убрать камень
+// remove the stone
 Board.prototype.remove = function (coord) {
   var cell = coord.innerHTML
     ? coord
@@ -100,24 +100,24 @@ Board.prototype.remove = function (coord) {
   cell.className = "freecell";
 };
 
-// Расставить камни
+// Place the stones
 Board.prototype.fill = function () {
-  // Очистить доску
+  // Clear the board
   var cells = this.el.querySelectorAll("table.desk > tbody > tr > td");
   for (var i = 0; i < cells.length; ++i) {
     this.remove(cells[i]);
   }
-  // Нарисовать камни на доске
+  // Draw stones on the board
   this.record.forEach(function (coord, index) {
     this.put(coord, "" + (index + 1), index % 2 ? "white" : "black");
   }, this);
-  // Нарисовать предложение по следующим ходам
+  // Draw a sentence for the following moves
   this.help();
-  // Установить цвет текущего хода
+  // Set the color of the current move
   this.hand();
 };
 
-// Нарисовать предложение по следующим ходам
+// Draw a sentence for the following moves
 Board.prototype.help = function () {
   var cells = this.el.querySelectorAll("table.desk > tbody > tr > td.freecell");
   for (var i = 0; i < cells.length; ++i) {
@@ -143,10 +143,10 @@ Board.prototype.help = function () {
   }
 };
 
-// Зафикировать выигрышь
+// Fix win
 Board.prototype.checkwin = function () {
   if (this.current.count === 1 && this.current.coords) {
-    // Остановить партию и пометить выигрышные поля на доске
+    // Stop the game and mark the winning fields on the board
     var desk = this.el.querySelector("table.desk");
     desk.className = "desk";
     var cells = this.el.querySelectorAll("table.desk > tbody > tr > td");
@@ -166,7 +166,7 @@ Board.prototype.checkwin = function () {
   }
 };
 
-// Установить цвет текущего хода
+// Set the color of the current move
 Board.prototype.hand = function () {
   var color = this.record.length % 2 ? "white" : "black";
   var desk = this.el.querySelector("table.desk");
@@ -187,7 +187,7 @@ Board.prototype.hand = function () {
   }
 };
 
-// Сделать ход
+// Make a move
 Board.prototype.move = async function (coord) {
   this.calculating = true;
   var index = this.record.length;
@@ -201,7 +201,7 @@ Board.prototype.move = async function (coord) {
   delete this.calculating;
 };
 
-// Автоматический ход черных/белых
+// Auto move black / white
 Board.prototype.auto = function () {
   var self = this;
   return new Promise(function (resolve) {
@@ -213,7 +213,7 @@ Board.prototype.auto = function () {
           : self.attacker === Layout.WHITE);
       var count = self.count();
       if (auto && typeof self.current === "object" && count > 0) {
-        // Выбрать подходящие ходы
+        // Choose the appropriate moves
         var coords = [];
         for (var coord in self.current) {
           if (coord !== "count") {
@@ -224,11 +224,11 @@ Board.prototype.auto = function () {
             }
           }
         }
-        // Если 2-й ход - выбрать случайное направление
+        // If the 2nd move - choose a random direction
         if (self.record.length === 1) {
           self.transCode = Math.floor(Math.random() * 8);
         }
-        // Выбрать случайный ход
+        // Select a random move
         await self.move(
           self.transCoord(coords[Math.floor(Math.random() * coords.length)])
         );
@@ -238,7 +238,7 @@ Board.prototype.auto = function () {
   });
 };
 
-// Отменить ход
+// Cancel move
 Board.prototype.back = async function () {
   this.calculating = true;
   if (this.record.length > 1) {
@@ -251,7 +251,7 @@ Board.prototype.back = async function () {
     if (waswin) {
       this.fill();
     }
-    // Убираем ход белых/черных
+    // remove the white / black move
     var auto =
       this.el.querySelector("#automove").checked &&
       (this.record.length % 2 === 0
@@ -265,7 +265,7 @@ Board.prototype.back = async function () {
   delete this.calculating;
 };
 
-// Загрузить решение
+// Download the solution
 Board.prototype.load = function () {
   var xobj = new XMLHttpRequest(),
     self = this;
@@ -288,39 +288,39 @@ Board.prototype.load = function () {
   this.showProgress();
 };
 
-// Получить следующие ходы
+// Get the next moves
 Board.prototype.find = async function () {
-  // Найти текущую позицию
+  // Find current position
   if (this.solution) {
     this.current = this.solution;
     this.transCode = 0;
     var need;
-    // Расчет текущего решения
+    // Calculation of the current solution
     this.record.forEach(function (coord, index) {
       if (index === 1) {
-        // Только на 2-м ходе
+        // Only on the 2nd move
         this.transCode = Board.coordTransCode(coord);
       }
       coord = this.transCoord(coord, true);
       var next = this.current[coord];
       if (typeof next !== "object") {
         need = true;
-        // Преобразовать в объект
+        // Convert To Object
         next = typeof next !== "undefined" ? { count: next } : {};
         this.current[coord] = next;
       }
       this.current = next;
     }, this);
-    // Рассчитать продолжение
+    // Calculate the continuation
     if (need) {
       await this.estimateProgress();
     }
-    // Проверить на завершение
+    // Check for completion
     this.checkwin();
   }
 };
 
-// Расчет с отображением строки прогресса
+// Calculation with the display of the progress bar
 Board.prototype.estimateProgress = function () {
   var self = this;
   return new Promise(function (resolve) {
@@ -333,18 +333,18 @@ Board.prototype.estimateProgress = function () {
   });
 };
 
-// Расчет обязательных ходов
+// Calculation of required moves
 Board.prototype.estimate = async function () {
   var moves = [];
-  // Перевести в таблицу координа решения
+  // Translate to decision coordination table
   this.record.forEach(function (coord) {
     moves.push(
       Layout.transSquare(Board.coordToSquare(coord), this.transCode, true)
     );
   }, this);
-  // Рассчитать оценку обязательных ходов
+  // Calculate the assessment of required moves
   var layout = new Layout(moves);
-  // При автоматических партиях ищем комбинации завершения до 35 ходов
+  // With automatic games, we look for combinations of completion to 35 moves
   var computetarget = this.el.querySelector("#automove").checked ? 35 : 225;
   var vertex = Vertex.estimate(
     layout,
@@ -362,19 +362,19 @@ Board.prototype.estimate = async function () {
   }
   if (vertex.state === 0) {
     if (vertex.edges === null || vertex.edges.length === 0) {
-      // Подбираем простые ходы для скрытой атаки
+      // We select simple moves for a stealth attack
       moves = layout.gains(Pattern.ONE).concat(layout.downs(Pattern.TWO));
-      // Рассчитаем полученные позиции
+      // Calculate the received positions
       vertex.edges = [];
       moves.some(function (square) {
-        // Создать ребро с вершиной
+        // Create an edge with a vertex
         var e = this.makeEdge(square);
         // e.vertex.state = 0;
         this.edges.push(e);
       }, vertex);
-      // Сортировка дочерних узлов по рейтингу
+      // Sort child nodes by rating
       vertex.edges.sort(Edge.Comparator);
-      // Оставляем позиции с лучшим ходом
+      // Leave the position with the best move
       var es = [];
       var top = vertex.edges[0].vertex;
       vertex.edges.some(function (edge) {
@@ -393,11 +393,11 @@ Board.prototype.estimate = async function () {
     }, this);
     return;
   }
-  // Если предопределено развитие позиции
+  // If the position development is predetermined
   if (vertex.edges === null) {
     this.current.count = Math.abs(vertex.state);
     if (this.current.count === 1) {
-      // Определить поля выигрышной фигуры
+      // Define the fields of the winning piece
       var top = vertex.top(),
         moves = top.moves(),
         coords = [];
@@ -406,41 +406,41 @@ Board.prototype.estimate = async function () {
           Board.squareToCoord(Layout.transSquare(move, this.transCode))
         );
       }, this);
-      // Победа
+      // Victory
       this.current.coords = coords;
       this.checkwin();
       return;
     } else {
-      // Добавить ходы решения
+      // Add decision moves
       vertex.moves().forEach(function (move) {
         this.current[Board.squareToCoord(move)] = this.current.count - 1;
       }, this);
       return;
     }
   }
-  // Преобразовать граф решений в список ходов
+  // Convert decision graph to move list
   Board.vertexToSolution(vertex, this.current);
 };
 
-// Подсчет рещений
+// Count the solutions
 Board.count = function (current) {
   if (typeof current === "object") return Board.fillCount(current) - 1;
   else if (typeof current !== "undefined") return current - 1;
   else return 225;
 };
 
-// Подсчет рещений
+// Count the solutions
 Board.prototype.count = function () {
   return Board.count(this.current);
 };
 
-// Подсчет количество оставщихся ходов для позиции
+// Count the number of remaining moves for the position
 Board.fillCount = function (current) {
   if (typeof current.count === "undefined") {
     var maxcount = 0;
     for (var coord in current) {
       var count = current[coord];
-      // Рекурсия
+      // Recursion
       if (typeof count === "object") {
         count = Board.fillCount(count);
       }
@@ -453,7 +453,7 @@ Board.fillCount = function (current) {
   return current.count;
 };
 
-// Определить номер трансформации по 2-му ходу
+// Determine the transformation number on the 2nd move
 Board.squareTransCode = function (square) {
   var offset = square & 0xf,
     number = square >> 4;
@@ -475,12 +475,12 @@ Board.squareTransCode = function (square) {
     : 2;
 };
 
-// Определить номер трансформации по координате 2-го хода
+// Determine the transformation number by the coordinate of the 2nd move
 Board.coordTransCode = function (coord) {
   return Board.squareTransCode(Board.coordToSquare(coord));
 };
 
-// Преобразование номера ячейки в координаты
+// Convert cell number to coordinates
 Board.squareToCoord = function (square) {
   return (
     String.fromCharCode("a".charCodeAt(0) + (square & 0xf)) +
@@ -488,7 +488,7 @@ Board.squareToCoord = function (square) {
   );
 };
 
-// Обратное преобразование координат в номер ячейки
+// Inverse transformation of coordinates to cell number
 Board.coordToSquare = function (coord) {
   return (
     ((15 - parseInt(coord.substring(1))) << 4) |
@@ -496,14 +496,14 @@ Board.coordToSquare = function (coord) {
   );
 };
 
-// Трансформация координаты
+// Transform Coordinate
 Board.prototype.transCoord = function (coord, back) {
   return Board.squareToCoord(
     Layout.transSquare(Board.coordToSquare(coord), this.transCode, back)
   );
 };
 
-// Рекурсивное преобразование вершин в набор ходов
+// Recursively transform the vertices into a set of moves
 Board.vertexToSolution = function (vertex, current) {
   if (vertex.edges !== null) {
     current = current || {};
@@ -518,27 +518,27 @@ Board.vertexToSolution = function (vertex, current) {
   }
 };
 
-// Показать динию прогресса
+// Show progress line
 Board.prototype.showProgress = function () {
   this.el.querySelector(".line-progress").className = "line-progress active";
 };
 
-// Спрятать динию прогресса
+// Hide the line of progress
 Board.prototype.hideProgress = function () {
   this.el.querySelector(".line-progress").className = "line-progress";
 };
 
-// Замена хода
+// Replace stroke
 Board.prototype.swap = async function () {
   this.attacker = this.attacker === Layout.BLACK ? Layout.WHITE : Layout.BLACK;
   await this.auto();
 };
 
-// Следующий ход - два автоматических хода
+// Next move - two automatic moves
 Board.prototype.next = async function () {
   await this.swap();
   await this.swap();
 };
 
-// Оторазить доску
+// Tear off the board
 window.board = new Board(document.getElementById("board"));

@@ -1,11 +1,11 @@
 /**
- * Вершины графа
- * @param {Line[]} lines Линии
- * @param {int} hand Текущий ход
- * @param {Figure[]} figures Найденные фигуры
- * @param {int} type Максимальный шаблон фигуры
- * @param {int} count Количество камней на доске
- * @param {int} attacker Атакующая сторона
+ * Vertices of the graph
+ * @param { Line [] } lines Lines
+ * @param { int } hand Current move
+ * @param { Figure [] } figures Found figures
+ * @param { int } type Maximum shape pattern
+ * @param { int } count The number of stones on the board
+ * @param { int } attacker Attacking side
  */
 function Vertex(lines, hand, figures, type, count, attacker) {
   if (lines instanceof Layout) {
@@ -21,26 +21,26 @@ function Vertex(lines, hand, figures, type, count, attacker) {
   } else {
     Layout.apply(this, arguments.slice(0, arguments.length - 1));
   }
-  // Атакующая сторона
+  // attacking side
   this.attacker = arguments[arguments.length - 1];
 
-  // Состояние решения
-  // Ноль - неизвестно, положительное - выигрышь, отрицательно - проигрышь
-  // Колиство ходов до проигрыша или выигрыша на один меньше состояния
+  // Solution Status
+  // Zero - unknown, positive - win, negative - lose
+  // The number of moves before losing or winning is one less than the state
   this.state = 0;
 
-  // Перспективность позиции
+  // Position Perspective
   this.rating = 0;
 
-  // Ходы решения
+  // Solution moves
   this.edges = null;
 }
 
-// Наследование
+// Inheritance
 Vertex.prototype = Object.create(Layout.prototype);
 Vertex.prototype.constructor = Vertex;
 
-// Провексти оценку позиции
+// Make a position estimate
 Vertex.estimate = function (
   layout,
   attacker,
@@ -53,7 +53,6 @@ Vertex.estimate = function (
   computetarget = computetarget || 35;
   var target = computetarget - root.count + 1;
   estimatedepth = estimatedepth || 17;
-  //   estimatedepth = 2;
   var count = Math.max(Math.min(target - 2, estimatedepth), 0);
   for (var level = 0; level <= count; level++) {
     root.estimate(level, alledges, computetarget);
@@ -67,13 +66,13 @@ Vertex.estimate = function (
   ) {
     root.state = 0;
   }
-  // if (Math.abs(root.state) > target) {
-  //     root.state = 0;
-  // }
+  if (Math.abs(root.state) > target) {
+    root.state = 0;
+  }
   return root;
 };
 
-// Получить посчитанные ходы
+// Get calculated moves
 Vertex.prototype.moves = function () {
   if (this.edges === null) {
     if (this.state > 0) {
@@ -103,76 +102,76 @@ Vertex.prototype.moves = function () {
   return null;
 };
 
-// Подготовка оценки позиции
+// Prepare a position estimate
 Vertex.prototype.prepare = function () {
   var top = this.top();
   if (top !== null) {
-    // Свой ход: пять, четыре или открытая три
+    // Your move: five, four, or open three
     if (top.hand === this.hand) {
       switch (top.pattern.type) {
-        // Победа
+        // Victory
         case Pattern.FIVE:
           this.state = 1;
           break;
-        // Победа одним ходом
+        // Pobeda odnim hodom
         case Pattern.OPEN_FOUR:
         case Pattern.FOUR:
           this.state = 2;
           break;
-        // Победа в три хода
+        // Victory in three moves
         case Pattern.OPEN_THREE:
           this.state = 4;
           break;
         case Pattern.THREE:
         case Pattern.OPEN_TWO:
-          // Мы атакуем - будет продолжение
+          // We attack - there will be a continuation
           this.state = this.attacker === this.hand ? 0 : 1;
           break;
-        // Нет фигур для продолжения
+        // No shapes to continue
         default:
           this.state = this.attacker === this.hand ? -1 : 1;
       }
     } else {
-      // Чужеой ход
+      // Strange move
       switch (top.pattern.type) {
-        // Проигрышь
+        // lose
         case Pattern.FIVE:
           this.state = -1;
           break;
-        // Проигрышь через два хода
+        // lose in two moves
         case Pattern.OPEN_FOUR:
           this.state = -3;
           break;
-        // Будем защищаться
+        // We will defend ourselves
         case Pattern.FOUR:
         case Pattern.OPEN_THREE:
           this.state = 0;
           break;
-        // Нет фигур для продолжения
+        // No shapes to continue
         default:
           this.state = this.attacker === this.hand ? -1 : 1;
       }
     }
   } else {
-    // Нет фигур для продолжения
+    // No shapes to continue
     this.state = this.attacker === this.hand ? -1 : 1;
   }
-  // Рассчитаем рейтинг
+  // calculate the rating
   this.rating = this.rate();
 };
 
-// Построить дочерние узлы
+// Build child nodes
 Vertex.prototype.expand = function (alledges, computetarget) {
-  // Рассчитать возможные ходы
+  // Calculate possible moves
   var moves = [];
   var top = this.top();
-  // По уровню угрозы
+  // By threat level
   switch (top.pattern.type) {
-    // Пробуем делать вынужденные ходы и защищаться
+    // Try to make forced moves and defend
     case Pattern.FOUR:
       moves = this.downs(Pattern.FOUR);
       break;
-    // Пробуем атаковать и/или защищаться
+    // Try to attack and / or defend
     case Pattern.OPEN_THREE:
       moves = this.gains(Pattern.THREE);
       this.downs(Pattern.OPEN_THREE).forEach(function (square) {
@@ -182,20 +181,20 @@ Vertex.prototype.expand = function (alledges, computetarget) {
       }, this);
       break;
     default:
-      // Пробуем атаковать - мы атакующая сторона
+      // Try to attack - we are the attacking side
       moves = this.gains(Pattern.OPEN_TWO);
   }
   this.edges = [];
   moves.some(function (square) {
-    // Создать ребро с вершиной
+    // Create an edge with a vertex
     var e = this.makeEdge(square);
-    // Проверим достаточную глубину поиска
+    // Check for sufficient search depth
     var target = computetarget - this.count + 1;
     if (Math.abs(e.vertex.state) > target) {
       e.vertex.state = 0;
       e.vertex.edges = null;
     }
-    // Выигрышный ход - достаточно
+    // Winning move is enough
     if (!alledges && e.vertex.state < 0) {
       this.edges = [e];
       return true;
@@ -205,37 +204,37 @@ Vertex.prototype.expand = function (alledges, computetarget) {
   this.check();
 };
 
-// Создать вершину
+// Create vertex
 Vertex.prototype.makeMove = function (square) {
   var layout = Layout.prototype.makeMove.call(this, square);
   return new Vertex(layout, this.attacker);
 };
 
-// Создать ребро с вершиной
+// Create an edge with a vertex
 Vertex.prototype.makeEdge = function (square) {
   var v = this.makeMove(square);
   v.prepare();
   return new Edge(square, v);
 };
 
-// Оценка выполнения вынужденных ходов
+// Evaluation of the execution of forced moves
 Vertex.prototype.estimate = function (level, alledges, computetarget) {
-  // Построение дочернего уровня
+  // Build a child level
   if (this.state === 0 && this.edges === null && level > 0) {
     this.expand(alledges, computetarget);
   }
-  // Итерационный вызов дочернего уровня
+  // Iterate call the child level
   if (this.state === 0 && this.edges !== null && level > 1) {
-    // Вызов оценки позции на уровень ниже в порядке рейтинга
+    // Call the rating of the position one level lower in ranking order
     this.edges.some(function (e) {
       var v = e.vertex;
-      // На уровень ниже нужен только один ход
+      // Only one move needed per level below
       v.estimate(level - 1, false, computetarget);
-      // Найден победный ход или для защиты найден не проигранный вариант
+      // A winning move was found or an unplayed option was found for defense
       if (
         !alledges &&
         (v.state < 0 ||
-          // Здесь быстрее ищет победу если != WIN и быстрее защиту
+          // Here is faster looking for victory if! = WIN and faster protection
           (this.attacker !== this.hand && v.state === 0))
       ) {
         return true;
@@ -245,18 +244,18 @@ Vertex.prototype.estimate = function (level, alledges, computetarget) {
   }
 };
 
-// Проверка состояния дочерних узлов
+// Check the status of child nodes
 Vertex.prototype.check = function () {
   if (this.edges !== null && this.edges.length > 0 && this.state !== -128) {
-    // Сортировка дочерних узлов по рейтингу
+    // Sort child nodes by rating
     this.edges.sort(Edge.Comparator);
-    // Выбираем лучший узел из дочерних
+    // Choose the best node from the children
     var top = this.edges[0].vertex;
     if (this.attacker === this.hand) {
       if (top.state < 0 && top.state !== -128) {
-        // Найден победный ход
+        // Winning move found
         this.state = -top.state + 1;
-        // Оставляем позиции с лучним ходом
+        // Leave the position with the best move
         var es = [];
         this.edges.some(function (edge) {
           if (edge.vertex.state !== top.state) {
@@ -266,19 +265,19 @@ Vertex.prototype.check = function () {
         }, this);
         this.edges = es;
       } else if (top.state > 0) {
-        // Перебор вариантов завершен, выигрыша нет
+        // Enumeration of options is completed, there is no win
         this.state = -1;
         this.edges = null;
       }
     } else {
       if (top.state < 0 && top.state !== -128) {
-        // Найдена ничья
+        // Draw found
         this.state = 1;
         this.edges = null;
       } else if (top.state > 0) {
-        // Перебор ходов завершен, позиция проиграна
+        // Enumeration of moves completed, position lost
         this.state = -top.state - 1;
-        // Оставляем позиции с лучшим ходом и имеющие дочерние
+        // Leave the positions with the best move and having children
         var es = [];
         this.edges.forEach(function (edge) {
           if (edge.vertex.edges !== null || edge.vertex.state === top.state) {
@@ -291,9 +290,9 @@ Vertex.prototype.check = function () {
   }
 };
 
-// Сравнение состояний
-// Меньшее значение соответствует наиболее короткому выигрышу или
-// неизвестности с большим рейтингом или наиболее длинному проигрышу
+// State comparison
+// A lower value corresponds to the shortest win or
+// unknowns with a high rating or the longest loss
 Vertex.prototype.compareTo = function (v) {
   if (v === null) {
     return -1;
