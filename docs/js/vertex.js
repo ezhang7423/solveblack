@@ -56,6 +56,7 @@ Vertex.estimate = function (
   //   estimatedepth = 2;
   var count = Math.max(Math.min(target - 2, estimatedepth), 0);
   for (var level = 0; level <= count; level++) {
+    console.log("SEARCH LEVEL AT", level);
     root.estimate(level, alledges, computetarget);
     if (root.state !== 0) {
       break;

@@ -343,7 +343,7 @@ Board.prototype.estimate = async function () {
     );
   }, this);
   // Calculate the assessment of required moves
-  var layout = new Layout(moves);
+  var layout = new Layout(moves, layout.WHITE);
   // With automatic games, we look for combinations of completion to 35 moves
   var computetarget = this.el.querySelector("#automove").checked ? 35 : 225;
   var vertex = Vertex.estimate(
@@ -372,6 +372,7 @@ Board.prototype.estimate = async function () {
         // e.vertex.state = 0;
         this.edges.push(e);
       }, vertex);
+      console.log(moves);
       // Sort child nodes by rating
       vertex.edges.sort(Edge.Comparator);
       // Leave the position with the best move

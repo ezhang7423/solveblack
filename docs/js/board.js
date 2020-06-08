@@ -343,7 +343,7 @@ Board.prototype.estimate = async function () {
     );
   }, this);
   // Рассчитать оценку обязательных ходов
-  var layout = new Layout(moves);
+  var layout = new Layout(moves, Layout.WHITE);
   // При автоматических партиях ищем комбинации завершения до 35 ходов
   var computetarget = this.el.querySelector("#automove").checked ? 35 : 225;
   var vertex = Vertex.estimate(
@@ -372,10 +372,13 @@ Board.prototype.estimate = async function () {
         // e.vertex.state = 0;
         this.edges.push(e);
       }, vertex);
+
       // Сортировка дочерних узлов по рейтингу
       vertex.edges.sort(Edge.Comparator);
       // Оставляем позиции с лучшим ходом
       var es = [];
+      if (!vertex.edges) {
+      }
       var top = vertex.edges[0].vertex;
       vertex.edges.some(function (edge) {
         if (
